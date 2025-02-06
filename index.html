@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Product Price Prediction</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: #e0e0e0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .container {
+            width: 80%;
+            max-width: 600px;
+            text-align: center;
+        }
+
+        .form-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .form-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        .form-row label {
+            flex: 1;
+        }
+
+        .form-row input {
+            flex: 2;
+            padding: 8px;
+            border-radius: 4px;
+            border: 1px solid #333;
+            background: #1e1e1e;
+            color: #e0e0e0;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            background-color: #00bcd4;
+            color: #121212;
+            font-size: 1em;
+            cursor: pointer;
+        }
+
+        .loading-container {
+            text-align: center;
+        }
+
+        .loading-bar {
+            width: 100%;
+            height: 5px;
+            background-color: #2c2c2c;
+            overflow: hidden;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+
+        .loading-bar-inner {
+            height: 100%;
+            background-color: #00bcd4;
+            width: 0;
+            animation: loading 3s linear;
+        }
+
+        @keyframes loading {
+            from { width: 0; }
+            to { width: 100%; }
+        }
+
+        .result-container {
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Input Form -->
+        <div id="form-section">
+            <h1>Enter Product Details</h1>
+            <form id="predict-form">
+                <div class="form-container">
+                    <div class="form-row">
+                        <label>Production Cost:</label>
+                        <input type="number" step="0.01" name="production_cost" required>
+                    </div>
+                    <div class="form-row">
+                        <label>Labour Cost:</label>
+                        <input type="number" step="0.01" name="labour_cost" required>
+                    </div>
+                    <div class="form-row">
+                        <label>Raw Material Cost:</label>
+                        <input type="number" step="0.01" name="raw_material_cost" required>
+                    </div>
+                    <div class="form-row">
+                        <label>Rent:</label>
+                        <input type="number" step="0.01" name="rent" required>
+                    </div>
+                    <div class="form-row">
+                        <label>Advertising:</label>
+                        <input type="number" step="0.01" name="advertising" required>
+                    </div>
+                
+                    <div class="form-row">
+                        <label>Packet Size (grams):</label>
+                        <input type="number" name="packet_size" required>
+                    </div>
+                </div>
+                <button type="submit">Submit</button>
+            </form>
+        </div>
+
+        <!-- Loading Screen -->
+        <div id="loading-section" class="hidden">
+            <div class="loading-container">
+                <p>Processing your request...</p>
+                <div class="loading-bar">
+                    <div class="loading-bar-inner"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Section -->
+        <div id="result-section" class="hidden">
+            <h1>Prediction Results</h1>
+            <p>Predicted Price: ₹<span id="predicted_price"></span></p>
+            <p>Price Range: ₹<span id="lower_bound"></span> - ₹<span id="upper_bound"></span></p>
+            <button onclick="showForm()">Back to Input</button>
+        </div>
+    </div>
+
+    <script>
+        const formSection = document.getElementById("form-section");
+        const loadingSection = document.getElementById("loading-section");
+        const resultSection = document.getElementById("result-section");
+
+        const form = document.getElementById("predict-form");
+
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            // Switch to loading section
+            formSection.classList.add("hidden");
+            loadingSection.classList.remove("hidden");
+
+            // Gather form data
+            const formData = new FormData(form);
+            const data = {};
+            formData.forEach((value, key) => {
+                data[key] = value;
+            });
+
+            try {
+                const response = await fetch("/predict", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(data),
+                });
+
+                const result = await response.json();
+
+                if (result.error) {
+                    alert(`Error: ${result.error}`);
+                    showForm();
+                } else {
+                    // Display the result
+                    document.getElementById("predicted_price").textContent = result.predicted_price;
+                    document.getElementById("lower_bound").textContent = result.lower_bound;
+                    document.getElementById("upper_bound").textContent = result.upper_bound;
+
+                    // Switch to result section
+                    loadingSection.classList.add("hidden");
+                    resultSection.classList.remove("hidden");
+                }
+            } catch (error) {
+                alert("An error occurred. Please try again.");
+                showForm();
+            }
+        });
+
+        function showForm() {
+            resultSection.classList.add("hidden");
+            loadingSection.classList.add("hidden");
+            formSection.classList.remove("hidden");
+        }
+    </script>
+</body>
+</html>
